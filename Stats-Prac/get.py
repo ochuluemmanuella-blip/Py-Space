@@ -1,6 +1,6 @@
 import requests
 
-response = requests.get('https://api.github.com/users/raymondproguy')
+response = requests.get('https://api.github.com/users/jakes010')
 
 print(f"status code: {response.status_code}")
 user_info =response.json()
