@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Circle — Daily Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+:root{
+  --bg: #171335;
+  --bg-deep: #100D28;
+  --panel: #201C42;
+  --panel-hi: #29244F;
+  --spine: #3A3468;
+  --text: #F2EFEA;
+  --text-muted: #9A93BE;
+  --amber: #F0A85A;
+  --amber-soft: rgba(240,168,90,0.14);
+  --teal: #5FC7B0;
+  --teal-soft: rgba(95,199,176,0.14);
+  --danger: #E28080;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background: radial-gradient(ellipse at top, #1D1946 0%, var(--bg-deep) 70%);
+  color: var(--text);
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  padding: 32px 16px 64px;
+}
+
+.wrap{
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+header{
+  margin-bottom: 28px;
+}
+
+h1{
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle{
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 46ch;
+}
+
+.now-card{
+  background: linear-gradient(135deg, var(--panel-hi), var(--panel));
+  border: 1px solid var(--spine);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin: 22px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.now-card::before{
+  content: "";
+  position: absolute;
+  top: -40%; right: -20%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--amber-soft) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.now-label{
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.now-clock{
+  font-family: 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--amber);
+  float: right;
+}
+
+.now-task{
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 2px 0 2px;
+}
+
+.now-range{
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.toggle-row{
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.toggle-btn{
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--spine);
+  color: var(--text-muted);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggle-btn.active{
+  background: var(--amber-soft);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.toggle-btn:focus-visible{
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.progress-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.progress-track{
+  flex: 1;
+  height: 6px;
+  background: var(--panel);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill{
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--teal));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.timeline{
+  position: relative;
+  padding-left: 68px;
+}
+
+.timeline::before{
+  content: "";
+  position: absolute;
+  left: 46px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--spine);
+}
+
+.block{
+  position: relative;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.block:last-child{ border-bottom: none; }
+
+.block-time{
+  position: absolute;
+  left: -68px;
+  top: 15px;
+  width: 60px;
+  text-align: right;
+  font-family: 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.block-dot{
+  position: absolute;
+  left: -33px;
+  top: 20px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--bg-deep);
+  border: 2px solid var(--spine);
+  transition: all 0.15s ease;
+}
+
+.block.done .block-dot{
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.block.current .block-dot{
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 0 4px var(--amber-soft);
+}
+
+.block-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.checkbox{
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--spine);
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.checkbox svg{
+  width: 13px; height: 13px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.block.done .checkbox{
+  background: var(--teal-soft);
+  border-color: var(--teal);
+}
+
+.block.done .checkbox svg{ opacity: 1; }
+
+.block-body{ flex: 1; min-width: 0; }
+
+.block-title{
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.block.done .block-title{
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--spine);
+}
+
+.block-note{
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.block-dur{
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 2px 7px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 1px;
+}
+
+.history-toggle{
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--spine);
+  color: var(--text);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 26px;
+  text-align: left;
+}
+
+.history-toggle:hover{ border-color: var(--amber); }
+
+.history{
+  margin-top: 14px;
+  display: none;
+}
+
+.history.open{ display: block; }
+
+.streak-row{
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.streak-card{
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--spine);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.streak-num{
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.streak-label{
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.day-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+
+.day-date{
+  width: 92px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.day-date.today{ color: var(--amber); font-weight: 600; }
+
+.day-track{
+  flex: 1;
+  height: 5px;
+  background: var(--bg-deep);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.day-fill{
+  height: 100%;
+  background: var(--teal);
+  border-radius: 999px;
+}
+
+.day-frac{
+  width: 46px;
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.history-empty{
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+footer{
+  margin-top: 28px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.reset-btn{
+  background: none;
+  border: 1px solid var(--spine);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.reset-btn:hover{ color: var(--text); border-color: var(--text-muted); }
+
+@media (max-width: 420px){
+  .timeline{ padding-left: 56px; }
+  .timeline::before{ left: 38px; }
+  .block-time{ left: -56px; width: 48px; font-size: 11px; }
+  .block-dot{ left: -27px; }
+  .now-clock{ float: none; display: block; margin-bottom: 4px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Circle</h1>
+    <p class="subtitle">Your 24 hours, laid out block by block. Tap any item to check it off — it saves as you go.</p>
+  </header>
+
+  <div class="now-card">
+    <span class="now-clock" id="clockDisplay">--:--</span>
+    <div class="now-label">Right now</div>
+    <div class="now-task" id="nowTask">Loading…</div>
+    <div class="now-range" id="nowRange"></div>
+  </div>
+
+  <div class="toggle-row" role="group" aria-label="Day type">
+    <button class="toggle-btn" id="btnRegular" onclick="setDayType('regular')">Regular day</button>
+    <button class="toggle-btn" id="btnPrayer" onclick="setDayType('prayer')">Prayer day (Mon/Wed/Fri)</button>
+  </div>
+
+  <div class="progress-row">
+    <span id="progressLabel">0 / 0 done</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <button class="history-toggle" id="historyToggleBtn" onclick="toggleHistory()">View day-by-day history ▾</button>
+  <div class="history" id="historySection">
+    <div class="streak-row">
+      <div class="streak-card">
+        <div class="streak-num" id="streakCurrent">0</div>
+        <div class="streak-label">day streak (80%+ complete)</div>
+      </div>
+      <div class="streak-card">
+        <div class="streak-num" id="streakTracked">0</div>
+        <div class="streak-label">days tracked</div>
+      </div>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <footer>
+    <div id="dateLabel"></div>
+    <div id="syncStatus" style="color:var(--danger); font-size:11px; margin-top:6px; min-height:14px;"></div>
+    <button class="reset-btn" onclick="resetToday()">Reset today's checks</button>
+  </footer>
+</div>
+
+<script>
+const REGULAR = [
+  {id:'sleep1', start:'21:00', end:'23:00', title:'Sleep — first block', note:''},
+  {id:'python', start:'23:00', end:'00:30', title:'Python practice & review', note:'Top priority block'},
+  {id:'music', start:'00:30', end:'02:00', title:'Music platform work', note:'Go streaming project'},
+  {id:'japanese', start:'02:00', end:'02:30', title:'Japanese', note:'Duolingo + AnkiWeb review'},
+  {id:'buffer', start:'02:30', end:'04:00', title:'Buffer / catch-up', note:'Overflow from any block above'},
+  {id:'winddown', start:'04:00', end:'04:30', title:'Wind down', note:'Ease out of study mode'},
+  {id:'prayer_personal', start:'04:30', end:'05:30', title:'Personal prayer life', note:''},
+  {id:'sleep2', start:'05:30', end:'07:00', title:'Sleep — second block', note:'Flexible, sometimes runs to 8:00'},
+  {id:'prep', start:'07:00', end:'09:00', title:'Wake, get ready, commute', note:''},
+  {id:'plan', start:'09:00', end:'09:15', title:'Plan the day / check dashboard', note:''},
+  {id:'batch1', start:'09:15', end:'11:15', title:'Dashboard lessons — batch 1', note:''},
+  {id:'break1', start:'11:15', end:'11:30', title:'Short break', note:''},
+  {id:'batch2', start:'11:30', end:'13:00', title:'Dashboard lessons — batch 2', note:'Aim to close out the 10–15 for the day'},
+  {id:'lunch', start:'13:00', end:'13:45', title:'Lunch', note:''},
+  {id:'khan', start:'13:45', end:'14:45', title:'Khan Academy', note:''},
+  {id:'cisco', start:'14:45', end:'15:45', title:'Cisco Networking Academy', note:''},
+  {id:'jiki', start:'15:45', end:'16:45', title:'jiki.io', note:''},
+  {id:'logout', start:'16:45', end:'17:00', title:'Log progress, close out work', note:''},
+  {id:'walk', start:'17:00', end:'18:00', title:'Walk + fetch water', note:''},
+  {id:'screen', start:'18:00', end:'19:00', title:'Screen time', note:'Anime or reading'},
+  {id:'dinner', start:'19:00', end:'21:00', title:'Dinner, downtime, personal', note:''},
+];
+
+const PRAYER = REGULAR.slice(0, 18).concat([
+  {id:'walk_p', start:'17:00', end:'17:30', title:'Walk / errands', note:'Shortened today'},
+  {id:'prayers', start:'17:30', end:'19:30', title:'Prayers', note:'Sometimes runs to 8:00pm'},
+  {id:'dinner_p', start:'19:30', end:'21:00', title:'Dinner, quick decompress', note:''},
+]);
+
+let currentDayType = 'regular';
+let checks = {};
+let todayKey = '';
+
+function todayDateStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function defaultDayTypeForToday(){
+  const day = new Date().getDay(); // 0 Sun ... 1 Mon, 3 Wed, 5 Fri
+  return (day===1||day===3||day===5) ? 'prayer' : 'regular';
+}
+
+function toMinutes(t){
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+
+function fmt12(t){
+  const [h,m] = t.split(':').map(Number);
+  const period = h>=12 ? 'pm':'am';
+  let h12 = h%12; if(h12===0) h12=12;
+  return h12+(m? ':'+String(m).padStart(2,'0'):'')+period;
+}
+
+async function loadState(){
+  todayKey = todayDateStr();
+  let hadStoredDayType = true;
+  try{
+    const dtRes = await window.storage.get('circuit:daytype:'+todayKey);
+    currentDayType = dtRes ? JSON.parse(dtRes.value) : defaultDayTypeForToday();
+    if(!dtRes) hadStoredDayType = false;
+  }catch(e){
+    currentDayType = defaultDayTypeForToday();
+    hadStoredDayType = false;
+  }
+  try{
+    const chRes = await window.storage.get('circuit:checks:'+todayKey);
+    checks = chRes ? JSON.parse(chRes.value) : {};
+  }catch(e){
+    checks = {};
+  }
+  if(!hadStoredDayType) await saveDayType();
+}
+
+async function saveDayType(){
+  const ok = await saveWithRetry('circuit:daytype:'+todayKey, JSON.stringify(currentDayType));
+  showSyncStatus(ok);
+}
+
+async function saveWithRetry(key, value, attempts = 3){
+  for(let i = 0; i < attempts; i++){
+    try{
+      const res = await window.storage.set(key, value);
+      if(res) return true;
+    }catch(e){
+      // swallow — transient backend errors are common and self-resolve; retry below
+    }
+    if(i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i+1)));
+  }
+  return false;
+}
+
+function showSyncStatus(ok){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if(ok){
+    el.textContent = '';
+  } else {
+    el.textContent = 'Not synced yet — will retry on your next tap';
+  }
+}
+
+async function saveChecks(){
+  const ok = await saveWithRetry('circuit:checks:'+todayKey, JSON.stringify(checks));
+  showSyncStatus(ok);
+}
+
+function getBlocks(){
+  return currentDayType === 'prayer' ? PRAYER : REGULAR;
+}
+
+function getCurrentBlock(){
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const blocks = getBlocks();
+  for(const b of blocks){
+    let s = toMinutes(b.start), e = toMinutes(b.end);
+    if(e <= s) e += 24*60; // overnight wrap
+    let n = nowMin;
+    if(n < s && (e - s) > 0 && s > 12*60 && n < 12*60) n += 24*60; // handle wrap for early-morning "now"
+    if(n >= s && n < e) return b;
+  }
+  return null;
+}
+
+function render(){
+  document.getElementById('btnRegular').classList.toggle('active', currentDayType==='regular');
+  document.getElementById('btnPrayer').classList.toggle('active', currentDayType==='prayer');
+
+  const blocks = getBlocks();
+  const timeline = document.getElementById('timeline');
+  timeline.innerHTML = '';
+
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  const current = getCurrentBlock();
+
+  let doneCount = 0;
+
+  blocks.forEach(b => {
+    const isDone = !!checks[b.id];
+    if(isDone) doneCount++;
+    const isCurrent = current && current.id === b.id;
+
+    const el = document.createElement('div');
+    el.className = 'block' + (isDone?' done':'') + (isCurrent?' current':'');
+
+    el.innerHTML = `
+      <div class="block-time">${fmt12(b.start)}<br>${fmt12(b.end)}</div>
+      <div class="block-dot"></div>
+      <div class="block-row" tabindex="0" role="checkbox" aria-checked="${isDone}">
+        <div class="checkbox">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke="#0F0F1F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="block-body">
+          <p class="block-title">${b.title}</p>
+          ${b.note ? `<p class="block-note">${b.note}</p>` : ''}
+        </div>
+        <span class="block-dur">${durationLabel(b)}</span>
+      </div>
+    `;
+
+    const row = el.querySelector('.block-row');
+    row.addEventListener('click', () => toggleCheck(b.id));
+    row.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleCheck(b.id); }
+    });
+
+    timeline.appendChild(el);
+  });
+
+  document.getElementById('progressLabel').textContent = `${doneCount} / ${blocks.length} done`;
+  document.getElementById('progressFill').style.width = blocks.length ? (doneCount/blocks.length*100)+'%' : '0%';
+
+  if(current){
+    document.getElementById('nowTask').textContent = current.title;
+    document.getElementById('nowRange').textContent = fmt12(current.start) + ' – ' + fmt12(current.end);
+  } else {
+    document.getElementById('nowTask').textContent = 'Off schedule';
+    document.getElementById('nowRange').textContent = '';
+  }
+
+  document.getElementById('dateLabel').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+}
+
+function durationLabel(b){
+  let s = toMinutes(b.start), e = toMinutes(b.end);
+  if(e <= s) e += 24*60;
+  const mins = e - s;
+  if(mins < 60) return mins+'m';
+  const h = Math.floor(mins/60), m = mins%60;
+  return m ? `${h}h${m}m` : `${h}h`;
+}
+
+async function toggleCheck(id){
+  checks[id] = !checks[id];
+  render();
+  await saveChecks();
+  if(historyOpen) await renderHistory();
+}
+
+async function setDayType(type){
+  if(type === currentDayType) return;
+  currentDayType = type;
+  render();
+  await saveDayType();
+}
+
+async function resetToday(){
+  checks = {};
+  render();
+  await saveChecks();
+  if(historyOpen) await renderHistory();
+}
+
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes();
+  const period = h>=12?'pm':'am';
+  let h12 = h%12; if(h12===0) h12=12;
+  document.getElementById('clockDisplay').textContent = h12+':'+String(m).padStart(2,'0')+period;
+}
+
+let historyLoaded = false;
+let historyOpen = false;
+
+function weekdayDayType(dateStr){
+  const d = new Date(dateStr+'T12:00:00');
+  const day = d.getDay();
+  return (day===1||day===3||day===5) ? 'prayer' : 'regular';
+}
+
+function blocksCountForType(type){
+  return (type === 'prayer' ? PRAYER : REGULAR).length;
+}
+
+function formatDayLabel(dateStr){
+  const d = new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+async function loadHistory(){
+  let checkKeys = [];
+  try{
+    const listRes = await window.storage.list('circuit:checks:');
+    checkKeys = listRes && listRes.keys ? listRes.keys : [];
+  }catch(e){
+    console.error('history list failed', e);
+    return [];
+  }
+
+  const days = [];
+  for(const key of checkKeys){
+    const dateStr = key.replace('circuit:checks:', '');
+    let checksForDay = {};
+    let dayType = null;
+    try{
+      const chRes = await window.storage.get(key);
+      checksForDay = chRes ? JSON.parse(chRes.value) : {};
+    }catch(e){ /* skip */ }
+    try{
+      const dtRes = await window.storage.get('circuit:daytype:'+dateStr);
+      dayType = dtRes ? JSON.parse(dtRes.value) : null;
+    }catch(e){ /* fall through to weekday guess */ }
+    if(!dayType) dayType = weekdayDayType(dateStr);
+
+    const total = blocksCountForType(dayType);
+    const done = Object.values(checksForDay).filter(Boolean).length;
+    days.push({date: dateStr, done, total, pct: total ? done/total : 0});
+  }
+
+  days.sort((a,b) => b.date.localeCompare(a.date));
+  return days;
+}
+
+function computeStreak(days){
+  // days sorted descending by date, starting from today
+  let streak = 0;
+  for(const d of days){
+    if(d.pct >= 0.8) streak++;
+    else break;
+  }
+  return streak;
+}
+
+async function renderHistory(){
+  const days = await loadHistory();
+  document.getElementById('streakCurrent').textContent = computeStreak(days);
+  document.getElementById('streakTracked').textContent = days.length;
+
+  const list = document.getElementById('historyList');
+  if(days.length === 0){
+    list.innerHTML = '<div class="history-empty">Nothing logged yet — check off a block to start your history.</div>';
+    return;
+  }
+
+  list.innerHTML = days.map(d => `
+    <div class="day-row">
+      <span class="day-date${d.date===todayKey?' today':''}">${d.date===todayKey?'Today':formatDayLabel(d.date)}</span>
+      <div class="day-track"><div class="day-fill" style="width:${Math.round(d.pct*100)}%"></div></div>
+      <span class="day-frac">${d.done}/${d.total}</span>
+    </div>
+  `).join('');
+}
+
+async function toggleHistory(){
+  historyOpen = !historyOpen;
+  const section = document.getElementById('historySection');
+  const btn = document.getElementById('historyToggleBtn');
+  section.classList.toggle('open', historyOpen);
+  btn.textContent = historyOpen ? 'Hide day-by-day history ▴' : 'View day-by-day history ▾';
+  if(historyOpen){
+    await renderHistory();
+  }
+}
+
+async function init(){
+  await loadState();
+  render();
+  updateClock();
+  setInterval(() => { updateClock(); render(); }, 30000);
+}
+
+init();
+</script>
+</body>
+</html>
